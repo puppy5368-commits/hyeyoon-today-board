@@ -54,8 +54,8 @@ window.initDailyPlans = function ({key, ids, TASKS, firstStart, refresh}) {
       if(key()!==date){draft=null;refresh();return;}
       if(!validTime(draft.firstStartTime)){document.getElementById('planError').textContent='첫 공부를 시작할 시간을 골라주세요 💗';return;}
       try {
-        const data=load();data.days[date]={firstStartTime:draft.firstStartTime, taskOrder:[...draft.taskOrder], deadline:rules.deadline, updatedAt:new Date().toISOString()};
-        localStorage.setItem(STORAGE_KEY,JSON.stringify(data));draft=null;render();renderRecords();
+        const data=load(),before=JSON.parse(JSON.stringify(data));data.days[date]={firstStartTime:draft.firstStartTime, taskOrder:[...draft.taskOrder], deadline:rules.deadline, updatedAt:new Date().toISOString()};
+        if(window.boardCloud)window.boardCloud.savePlan(before,data);else localStorage.setItem(STORAGE_KEY,JSON.stringify(data));draft=null;render();renderRecords();
       } catch {document.getElementById('planError').textContent='계획을 저장하지 못했어요. 저장 공간을 확인하고 다시 눌러주세요.';}
     };
   }
