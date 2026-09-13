@@ -1,4 +1,4 @@
-/* Phase 1 only. No full-object uploads, imports, deletes, or subject-board access. */
+/* One family board. Field-level writes; no historical uploads or subject-board access. */
 (function (root) {
   'use strict';
   const MAIN = 'heeyoon-today-board:v1', PLANS = 'heeyoon-today-board:daily-plans:v1';
@@ -58,13 +58,15 @@
   function create({storage,client,onStatus=()=>{},onChange=()=>{},online=()=>true,uid=()=>crypto.randomUUID()}){
     let user=null, running=false,again=false,failed=false,localProblem=false,lastAt=0;
     const status=(text)=>onStatus(text);
-    const scoped=()=>PREFIX+user+':';
+    // Auth identities can change. The queue belongs to the family, even offline.
+    const scoped=()=>PREFIX+'family:v1:';
     function json(k,fallback){const raw=storage.getItem(k);return raw===null?fallback:JSON.parse(raw);}
     function operations(){const all=[];for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k.startsWith(scoped()+'op:'))all.push({key:k,...json(k,{})});}return all.sort((a,b)=>a.at-b.at||a.key.localeCompare(b.key));}
     function meta(id){return json(scoped()+'row:'+id,null);}
     function backup(key){const target=PREFIX+'original:'+key;if(storage.getItem(target)===null){const raw=storage.getItem(key);if(raw!==null)storage.setItem(target,raw);}}
     function summary(){
       if(localProblem)return status('⚠️ 추가 저장 공간을 확인해 주세요 · 동기화 일부 대기');
+      if(!user)return status('📴 이 기기에 저장됨 · 온라인 연결 대기');
       if(!online())return status('📴 오프라인 · 이 기기에 저장됨');
       if(failed)return status('⚠️ 온라인 저장 실패 · 이 기기에는 저장됨');
       const ops=operations();let conflicts=ops.some(o=>o.conflict);
@@ -72,7 +74,6 @@
       status(conflicts?'⚠️ 기기 기록과 온라인 기록이 달라요 · 기기 기록 유지':ops.length?'☁️ 저장 대기 중…':'☁️ 동기화됨');
     }
     function commit(key,before,after){
-      if(!user)throw Error('login-required');
       const oldRows=rows(key,before),newRows=rows(key,after),changes=[];
       const latest=read(storage,key)|| (key===MAIN?{version:1,settings:{taskDays:{}},days:{}}:{version:1,days:{}});
       for(const [id,row] of Object.entries(newRows)){
@@ -141,7 +142,7 @@
       if(user===who)onChange();
     }
     async function sync(){
-      if(!user)return;
+      if(!user){summary();return;}
       if(running){again=true;return;}
       if(!online()){summary();return;}
       running=true;failed=false;const who=user;status('☁️ 저장 중…');
@@ -151,14 +152,28 @@
       finally{running=false;if(user===who)summary();if(again){again=false;void sync();}}
     }
     function setUser(id){
-      if(!id){user=null;return;}
-      // Legacy storage is single-account. Never expose it to a different account.
-      const owner=storage.getItem(PREFIX+'owner');if(owner&&owner!==id)throw Error('different-owner');
-      const legacyKey=PREFIX+id+':legacy-present';
+      if(!id){user=null;summary();return;}
+      // id is the DB's canonical family owner, NEVER the anonymous auth.uid().
+      const owner=storage.getItem(PREFIX+'owner'),family=storage.getItem(scoped()+'owner');
+      if((owner&&owner!==id)||(family&&family!==id))throw Error('different-owner');
+      // Copy old sync metadata/queued edits once; keep old keys as a migration archive.
+      const migrated=scoped()+'migrated:'+id,oldPrefix=PREFIX+id+':';
+      if(storage.getItem(migrated)===null){
+        const keys=[];for(let i=0;i<storage.length;i++)keys.push(storage.key(i));
+        for(const key of keys){
+          if(!key.startsWith(oldPrefix))continue;
+          const suffix=key.slice(oldPrefix.length);
+          if(!suffix.startsWith('op:')&&!suffix.startsWith('row:'))continue;
+          const target=scoped()+suffix;
+          if(storage.getItem(target)===null)storage.setItem(target,storage.getItem(key));
+        }
+        storage.setItem(migrated,'yes');
+      }
+      const legacyKey=scoped()+'legacy-present';
       if(storage.getItem(legacyKey)===null)storage.setItem(legacyKey,(storage.getItem(MAIN)||storage.getItem(PLANS))?'yes':'no');
-      storage.setItem(PREFIX+'owner',id);user=id;
+      storage.setItem(scoped()+'owner',id);user=id;
     }
-    return {commit,sync,setUser,read:key=>read(storage,key),hasLegacy:()=>user&&storage.getItem(scoped()+'legacy-present')==='yes'};
+    return {commit,sync,setUser,setClient:value=>{client=value;},read:key=>read(storage,key),hasLegacy:()=>storage.getItem(scoped()+'legacy-present')==='yes'};
   }
   root.BoardSync={create,MAIN,PLANS,rows,apply};
   if(typeof module!=='undefined')module.exports=root.BoardSync;

@@ -12,34 +12,14 @@
 <link rel="stylesheet" href="./board-cloud.css">
 </head>
 <body>
-<section class="login-panel" id="loginPanel" aria-labelledby="loginTitle">
-  <div class="penguin" aria-hidden="true">🐧</div><span class="eyebrow">OUR FAMILY PLANNER</span>
-  <h1 id="loginTitle">희윤이의 오늘을 함께 ♡</h1><p>가족 계정으로 로그인하고<br>오늘의 계획과 기록을 함께 살펴봐요.</p>
-  <form id="loginForm"><label>이메일<input id="loginEmail" type="email" autocomplete="username" required></label><label>비밀번호<input id="loginPassword" type="password" autocomplete="current-password" required></label><button class="btn primary" id="loginButton" disabled>로그인</button></form>
-  <p id="loginMessage" role="status" aria-live="polite">로그인 상태를 확인하고 있어요…</p>
-  <button class="btn" id="retryLogout" hidden>로그아웃 다시 시도</button>
-  <p class="login-note">작은 계획을 하나씩, 내 속도로 해봐요 🌷</p>
-</section>
-<section class="login-panel" id="recoveryPanel" aria-labelledby="recoveryTitle" hidden>
-  <div class="penguin" aria-hidden="true">🐧</div><span class="eyebrow">OUR FAMILY PLANNER</span>
-  <h1 id="recoveryTitle">새 비밀번호 설정</h1>
-  <p class="login-note">새 비밀번호로 희윤이의 오늘을 함께해요 🌷</p>
-  <form id="recoveryForm">
-    <label>새 비밀번호<input id="newPassword" type="password" autocomplete="new-password" required></label>
-    <label>새 비밀번호 확인<input id="confirmPassword" type="password" autocomplete="new-password" required></label>
-    <button class="btn primary" id="recoverySave" type="submit">저장</button>
-  </form>
-  <p id="recoveryMessage" role="status" aria-live="polite"></p>
-  <button class="btn primary" id="recoveryContinue" type="button" hidden>보드로 이동</button>
-</section>
-<div class="app" id="boardApp" hidden>
+<div class="app" id="boardApp">
 <header class="topbar"><div class="brand"><div class="penguin">🐧</div><div><h1>희윤이 학습도우미</h1><p>오늘 할 일 · 어린이 타임박싱 보드</p></div></div><button class="icon-btn" id="settingsShortcut">⚙️</button></header><div class="cloud-bar"><span id="syncStatus" role="status" aria-live="polite">☁️ 연결 확인 중…</span><button id="syncButton" type="button">동기화</button></div><p id="legacyNotice" class="legacy-notice"></p>
 <section class="hero"><span class="eyebrow">TODAY · 내가 정하는 하루</span><h2>희윤이 오늘 할 일</h2><div class="date" id="todayText"></div><div class="hero-grid"><div class="progress-wrap"><div class="progress-top"><strong>오늘의 미션</strong><b id="progressText"></b></div><div class="bar"><span id="progressBar"></span></div></div><div class="mini-note"><b>오늘의 약속 ♡</b><br>무엇을 할지는 정해져 있어도<br><strong>언제 할지는 내가 정해요.</strong></div></div></section>
 <nav class="tabs"><button class="tab active" data-view="today">오늘</button><button class="tab" data-view="week">이번 주</button><button class="tab" data-view="record">기록</button><button class="tab" data-view="settings">부모설정</button></nav>
 <main><section class="view active" id="view-today"><div id="dailyPlan"></div><div class="section-head"><div><h3>오늘의 미션</h3><p>먼저 시간을 정하고, 시작할 때 버튼을 눌러보세요.</p></div></div><div class="mission-list" id="missionList"></div><div class="section-head"><div><h3>나의 타임박스</h3><p>빈 시간은 놀고 쉬어도 되는 시간이에요.</p></div></div><section class="timebox"><h3>오늘 내가 정한 순서</h3><div id="timeboxList"></div></section><div class="principles"><b>오늘 할 일 보드의 규칙</b><ul><li>시간표를 꽉 채우지 않아요.</li><li>늦게 시작해도 실패가 아니에요. 완료하면 성공!</li><li>못 한 공부를 다음 날 몰아서 하지 않아요.</li><li>책읽기는 학습만화도 OK. 글책은 보너스 도전!</li></ul></div></section>
 <section class="view" id="view-week"><div class="section-head"><div><h3>이번 주</h3><p>연속 기록보다 이번 주에 해낸 것을 봐요. 날짜를 누르면 미션을 볼 수 있어요.</p></div></div><div class="week-summary"><div class="stat">완료한 미션 <b id="weekDone">0</b></div><div class="stat">이번 주 전체 미션 <b id="weekTotal">0</b></div></div><div class="week-grid" id="weekGrid"></div><section class="week-detail" id="weekDetail" aria-labelledby="weekDetailTitle" hidden></section><div class="challenge"><b>✏️ 문해력 · 주 2회</b><p>근거를 찾고 정확하게 읽기 · 12주 A/B 학습</p><a class="btn" href="./literacy/">문해력 보드 열기 →</a></div><div class="challenge"><b>📖 글책 도전</b><div id="bookStars"></div></div></section>
 <section class="view" id="view-record"><div class="section-head"><div><h3>나의 기록</h3></div></div><div class="record-list" id="recordList"></div></section>
-<section class="view" id="view-settings"><div class="section-head"><div><h3>부모 설정</h3></div></div><div class="settings-card"><h4>주간 학습 요일</h4><div id="settingsTasks"></div></div><div class="settings-card"><h4>독서 목표</h4><select id="bookGoal"><option value="1">1회</option><option value="2">2회</option><option value="3">3회</option></select></div><div class="settings-card"><h4>🌷 오늘 계획 기록</h4><p>스스로 정한 시간과 실제 시작을 함께 살펴봐요.</p><div id="planRecords"></div></div><div class="settings-card"><p class="legacy-notice">기록 보호를 위해 1단계에서는 전체 초기화를 제공하지 않아요.</p><button type="button" class="logout-button" id="logoutButton">이 기기에서 로그아웃</button></div></section></main>
+<section class="view" id="view-settings"><div class="section-head"><div><h3>부모 설정</h3></div></div><div class="settings-card"><h4>주간 학습 요일</h4><div id="settingsTasks"></div></div><div class="settings-card"><h4>독서 목표</h4><select id="bookGoal"><option value="1">1회</option><option value="2">2회</option><option value="3">3회</option></select></div><div class="settings-card"><h4>🌷 오늘 계획 기록</h4><p>스스로 정한 시간과 실제 시작을 함께 살펴봐요.</p><div id="planRecords"></div></div><div class="settings-card"><p class="legacy-notice">기록 보호를 위해 1단계에서는 전체 초기화를 제공하지 않아요.</p></div></section></main>
 <footer class="footer">희윤이 학습도우미 · 오늘 할 일 보드 V1.1<br>해야 할 일은 정해져 있어도, 순서와 시간은 내가 정해요.</footer></div>
 <dialog id="bookDialog"><div class="modal"><button class="icon-btn" onclick="bookDialog.close()">✕</button><h3>📖 추천 글책</h3><div class="books" id="booksList"></div></div></dialog><div class="toast" id="toast"></div>
 <script src="./supabase-config.js"></script>

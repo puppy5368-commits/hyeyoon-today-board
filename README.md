@@ -1,56 +1,69 @@
 # 희윤이 오늘 할 일 보드 - 어와나 추가본
 
-## 기기 간 공유 1단계 (로컬 구현, 아직 배포하지 않음)
+## 로그인 없는 단일 가족 공유 보드
 
-### 처음 연결하기
+사이트를 열면 즉시 기존 보드가 표시됩니다. 이메일/비밀번호, 가입, 복구, 로그아웃 화면은 없습니다.
+세션이 없으면 `signInAnonymously()`로 자동 인증하고, 이미 있는 세션은 그대로 사용합니다.
+인증·인터넷·서버 설정에 문제가 있어도 localStorage에 저장하며 보드를 사용할 수 있습니다.
+동기화 버튼/온라인 복구/화면 복귀/60초 간격으로 다시 연결합니다.
 
-1. `supabase-config.js`의 `projectUrl`과 `publishableKey` 두 값만 입력합니다.
-   URL은 `https://프로젝트ID.supabase.co`, key는 `sb_publishable_` 형식입니다.
-   이메일·비밀번호·secret/service_role key·DB 비밀번호를 파일에 쓰지 않습니다.
-   정적 사이트라 `.env`를 브라우저가 자동으로 읽지 않습니다. 이 두 값은 공개 설정입니다.
-2. Supabase에서 준비한 4개 테이블(`board_preferences`, `task_schedules`,
-   `daily_plans`, `task_records`)과 사용자별 RLS를 유지합니다. `authenticated`에
-   SELECT/INSERT/UPDATE 권한, Data API의 노출 스키마에 `public`이 필요합니다.
-   새 테이블 자동 노출 옵션 전체를 켤 필요는 없습니다. 추가 SQL은 없습니다.
-3. 가족 계정 하나로 각 기기에서 로그인합니다. 공개 가입·익명 로그인은 끈 상태로 둡니다.
-   로그인은 이메일/비밀번호이며, 복귀 URL·SMTP·Realtime은 이 단계에서 사용하지 않습니다.
-4. `node scripts/serve.cjs` → `http://localhost:4173/`로 엽니다.
-   설정값이 비어 있으면 로그인 화면에서 연결 준비 안내만 표시합니다.
+### DB 적용 (관리자 작업)
 
-### 보존·저장 정책
+1. `supabase/inspect-family.sql`로 기존 4개 테이블의 소유자, RLS, 제약, 트리거를 확인합니다.
+2. `supabase/anonymous-family.sql`을 검토하고 Supabase SQL Editor에서 실행합니다.
+   - 기존 행의 `user_id`를 가족 데이터 식별자로 그대로 유지합니다. 행 이전/삭제/덮어쓰기는 없습니다.
+   - 기존 4개 테이블에서 소유자가 정확히 하나일 때만 자동 선택합니다. 비어 있거나 소유자가 여러 개면
+     전체 트랜잭션을 중단합니다. 관리자가 확인한 기존 가족 계정 UUID를 `selected_owner`에 명시해야 합니다.
+   - 비공개 `heeyoon_private.family_board`에 소유자를 고정합니다. 재실행해도 바꾸지 않습니다.
+     원본 계정은 데이터 기준점이므로 삭제하지 않습니다(외래 키로 삭제 차단).
+   - 클라이언트는 읽기 전용 RPC `heeyoon_family_owner()`로 이 값을 받아 사용합니다.
+     익명 인증 UUID나 브라우저 설정으로 다른 데이터 소유자를 선택하지 않습니다.
+   - `authenticated`에 가족 행 SELECT/INSERT/UPDATE만 허용합니다. 기존 RLS를 유지하면서
+     제한 정책을 추가해 다른 소유자의 행은 노출되지 않게 합니다. DELETE/TRUNCATE는 허용하지 않습니다.
+     인증 전 `anon` 역할은 테이블/RPC에 접근할 수 없고, 비공개 매핑을 수정할 수 없습니다.
+   - 기존 revision·기본 키·데이터 제약·트리거는 그대로 유지합니다.
+3. Supabase Authentication 설정에서 Anonymous Sign-Ins를 활성화합니다.
+4. `supabase-config.js`의 기존 공개 Project URL/publishable key를 사용합니다.
+   service_role/secret key, DB 비밀번호는 브라우저에 넣지 않습니다.
+5. 별도 브라우저 두 곳에서 실제 동기화를 확인한 후 배포합니다. SQL/인증 설정 적용 전에는 로컬 저장만 됩니다.
 
-- 기존 `heeyoon-today-board:v1`, `heeyoon-today-board:daily-plans:v1` key를 그대로 씁니다.
-- 로그인만으로 과거 기록을 업로드하지 않습니다. 빈 서버 응답은 기기 데이터를 지우지 않습니다.
-- 사용자 변경 필드만 기존 localStorage에 먼저 저장하고, 별도 전송 대기 기록을 남긴 뒤 전송합니다.
-  새 미션 행에는 실제 변경한 필드만 보냅니다. '오늘 계획 저장'은 해당 날짜의 계획 한 행을 보냅니다.
-- 최초 로컬 변경/서버 병합 전, 두 기존 key의 원문을 각각
-  `heeyoon-today-board:sync:v1:original:<기존 key>`에 한 번만 복사합니다.
-  이 사본은 갱신·삭제하지 않습니다. 같은 브라우저 안의 사본이므로 외부 export 백업을 대신하지 않습니다.
-- 전송 대기·서버 revision은 `heeyoon-today-board:sync:v1:` 아래 추가 key에 저장합니다.
-  성공한 전송 대기 항목만 제거합니다. 기존 학습 key는 삭제하지 않습니다.
-- 서버의 해당 행을 읽고 변경 필드와 기준값을 비교한 뒤, 현재 revision 조건과 `revision + 1`로 수정합니다.
-  다른 항목은 합치고, 같은 항목이 다르면 전송을 보류하며 기기 값을 유지합니다.
-  충돌을 강제로 해결하거나 기존 기록을 이전하는 UI는 다음 단계입니다.
-- 새로고침/로그인/화면 복귀/온라인 복구/동기화 버튼 및 화면을 보고 있는 동안 60초 간격으로 동기화합니다.
-  기본값·화면 렌더링만으로 만들어진 빈 미션은 업로드하지 않습니다.
-- 전체 초기화는 기록 보호를 위해 제공하지 않습니다. 어와나 완료 취소는 `done_at = null` 수정입니다.
-- 로그아웃은 현재 기기에만 적용합니다. 계정 비밀번호는 보관하지 않고 SDK 로그인 세션만 유지합니다.
-  기기 localStorage는 단일 가족 계정용이며 다른 계정으로 열기는 차단합니다.
-- 문해력/영어 상세 페이지·한국사 별도 사이트는 변경하지 않았고 별도 로그인 보호도 추가하지 않았습니다.
-  이번 인증 화면은 메인 보드만 보호합니다. 서버 데이터 보호는 RLS가 담당합니다.
+**보안 경계:** 단일 가족용 공개 공유 구조입니다. 사이트 주소를 아는 사용자는 익명 인증을 통해
+가족의 보드 데이터를 읽고 수정할 수 있습니다. 주소 자체가 비밀 키나 접근 제어는 아니며,
+프로젝트 URL과 공개 키를 이용한 직접 API 호출에도 같은 권한이 적용됩니다.
+이 방식으로 비공개 가족 데이터의 열람자를 제한할 수는 없습니다.
 
-### 테스트
+### 기존 기록 보존
 
-- `node scripts/test-cloud.cjs`: 실제 SDK + 격리된 Edge 브라우저 + 가짜 Supabase API.
-  실제 계정·실제 DB·일상 브라우저 프로필을 사용하지 않습니다.
-- `node scripts/test-daily-plan.cjs`: 로그인한 테스트 세션으로 기존 계획 UI 회귀 검사.
-- 위 두 테스트는 실행 중인 로컬 서버와 `playwright`, Microsoft Edge가 필요합니다.
-  서버 주소 변경 시 `BOARD_TEST_URL`을 지정합니다.
+- `heeyoon-today-board:v1`, `heeyoon-today-board:daily-plans:v1`을 그대로 사용합니다.
+- 과거 로컬 기록을 접속만으로 업로드하지 않습니다. 사용자가 변경한 필드만 전송합니다.
+  서버 응답이 비어 있어도 기기 기록을 삭제하지 않습니다.
+- 로컬 쓰기를 네트워크보다 먼저 수행하고, 인증 전 변경도 가족 전용 전송 대기에 저장합니다.
+- 최초 로컬 수정/서버 병합 전에 두 기존 키의 원문을
+  `heeyoon-today-board:sync:v1:original:<기존 key>`에 한 번 복사합니다. 사본은 덮어쓰거나 삭제하지 않습니다.
+- 기존 계정의 전송 대기·서버 기준값은 가족 소유자가 일치할 때 새
+  `heeyoon-today-board:sync:v1:family:v1:` 영역으로 한 번 복사합니다. 기존 키는 보관합니다.
+  익명 ID가 바뀌거나 새로고침해도 대기 중인 변경은 유지됩니다.
+- 기존 로컬 소유자가 서버의 가족 소유자와 다르면 온라인 연결을 보류하고 로컬 보드를 유지합니다.
+- 원본을 읽을 수 없는 경우 덮어쓰지 않습니다. 서버/기기의 같은 필드가 충돌하면 기기 값을 유지하고 알립니다.
+- 문해력/영어/한국사 상세 데이터는 읽거나 수정하지 않습니다. 메인 보드의 해당 미션 완료 표시는 기존 범위입니다.
+
+### 로컬 테스트
+
+`node scripts/serve.cjs`로 로컬 서버를 시작합니다. 아래 브라우저 테스트에는 `playwright`와 Edge가 필요합니다.
+
+- `node scripts/test-anonymous.cjs`: 화면 제거, 인증 지연/실패 중 로컬 저장, 서로 다른 익명 ID 간 공유,
+  세션 재사용, 설정/RPC 누락, 기존 대기 기록 이전, 원본·상세 학습 키·손상 JSON 보존.
+- `node scripts/test-cloud.cjs`: 필드 단위 동기화, 오프라인/재연결, revision 충돌, 기존 기록 보존.
+- `node scripts/test-daily-plan.cjs`: 기존 투두/계획 UI, 375px/1280px 회귀 검사.
 - `node scripts/test.cjs`, `node scripts/test-english.cjs`: 기존 문해력·영어 회귀 검사.
-- 실제 Supabase의 로그인/RLS/저장 성공은 공개 설정값 입력 후 별도로 검증해야 합니다.
-  가짜 API 검사는 실제 프로젝트의 권한 설정이 올바르다는 증거가 아닙니다.
-- 실제 확인은 먼저 새 브라우저 프로필에서 새 계획 하나를 저장하고, 두 번째 기기에서 확인합니다.
-  기존 그램 원본의 최초 이전/export 기능은 아직 구현하지 않았습니다.
+- `node scripts/test-family-sql.cjs`: `@electric-sql/pglite`가 필요합니다. 메모리 PostgreSQL에서 SQL을 직접 실행해
+  기존 행 불변, 다른 익명 사용자 간 공유, 타 소유자 위조·삭제·미인증 접근 차단, 모호한 소유자 시 롤백을 검증합니다.
+
+브라우저 테스트는 격리 프로필·실제 SDK·모의 API를 사용합니다. SQL 테스트는 임시 PostgreSQL입니다.
+실제 Supabase 프로젝트의 설정/트리거까지 확인한 결과와는 구분해야 합니다.
+
+참고: [Supabase 익명 인증](https://supabase.com/docs/guides/auth/auth-anonymous),
+[Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
 추가사항:
 - `어와나 말씀 암송` 미션 추가
