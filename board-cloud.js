@@ -54,6 +54,7 @@
   window.boardCloud={
     saveMain(before,after){return engine.commit(BoardSync.MAIN,before,after);},
     savePlan(before,after){return engine.commit(BoardSync.PLANS,before,after);},
+    migrationClient(){return client;},
     init(value){
       adapter=value;
       engine=window.BoardSync.create({storage:localStorage,client:null,online:()=>navigator.onLine,
