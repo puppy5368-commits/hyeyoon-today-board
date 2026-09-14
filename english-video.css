@@ -1,0 +1,15 @@
+#englishVideoDialog{padding:22px;width:min(92vw,560px);max-height:90dvh;overflow-y:auto;color:var(--ink);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+#englishVideoDialog::backdrop{background:rgba(23,23,23,.35)}
+.video-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.video-heading h2{font-size:22px;margin:0;line-height:1.4}
+.video-heading .icon-btn{flex-shrink:0}
+.video-intro{background:var(--pink);border-radius:14px;padding:13px;font-size:14px;line-height:1.6}
+.video-options{display:grid;gap:12px}
+.video-card{border:1px solid var(--line);border-radius:20px;padding:18px}
+.video-card h3{font-size:17px;margin:0 0 8px}
+.video-card p,.video-note{font-size:13px;color:var(--muted);line-height:1.6}
+.video-card .btn{display:inline-flex;align-items:center;color:var(--ink);text-decoration:none;min-height:44px}
+.video-other,.video-complete{width:100%;min-height:48px;padding:12px;margin-top:14px}
+.video-other[aria-pressed=true]{background:var(--pink);border-color:#b67b90}
+.video-note{margin-bottom:0}
+@media(max-width:400px){#englishVideoDialog{padding:18px}.video-heading h2{font-size:20px}}

@@ -3,7 +3,7 @@
   'use strict';
   const MAIN = 'heeyoon-today-board:v1', PLANS = 'heeyoon-today-board:daily-plans:v1';
   const PREFIX = 'heeyoon-today-board:sync:v1:';
-  const TASKS = ['gumonKorean','gumonHanja','qt','awana','reading','history','english','literacy'];
+  const TASKS = ['gumonKorean','gumonHanja','qt','awana','reading','history','english','englishVideo','literacy'];
   const fields = {planTime:'plan_time',startAt:'start_at',doneAt:'done_at',bookType:'book_type',bookTitle:'book_title'};
   const clone = x => JSON.parse(JSON.stringify(x));
   const equal = (a,b) => {
