@@ -49,7 +49,7 @@ const {network,session}=require('./test-cloud.cjs');
  await page.locator('[data-view="today"]').click();assert.equal(await page.locator('a[href="https://heeyoon-history.vercel.app/"]').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),375);
  await page.clock.setSystemTime(new Date('2026-09-12T15:00:00+09:00'));await page.reload();await page.locator('#boardApp').waitFor({state:'visible'});assert(await page.locator('#saveDailyPlan').isVisible());assert((await page.locator('.plan-order').innerText()).includes('영어'));
- assert.equal(await page.locator('a[href="./english/"]').count(),1);
+ assert.equal(await page.locator('a[href="./english/v2.html"]').count(),2,'mission and weekly English links use V2');
  await page.locator('[data-first-time="16:00"]').click();await page.locator('#saveDailyPlan').click();
  plans=await page.evaluate(()=>JSON.parse(localStorage.getItem('heeyoon-today-board:daily-plans:v1')));assert.equal(Object.keys(plans.days).length,2);
  await page.setViewportSize({width:1280,height:900});await page.locator('#editDailyPlan').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),1280);

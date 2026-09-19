@@ -146,7 +146,19 @@
       if(running){again=true;return;}
       if(!online()){summary();return;}
       running=true;failed=false;const who=user;status('☁️ 저장 중…');
-      const work=async()=>{for(const op of operations()){if(user!==who)return;await send(op,who);}if(user===who)await pull(who);};
+      // Keep an unsent operation in its outbox slot, but never let it starve
+      // later, unrelated rows.  This matters for a temporarily rejected task
+      // id: once the server constraint is corrected, that row will retry on a
+      // later sync while the rest of the family's changes can still arrive.
+      const work=async()=>{
+        let operationFailed=false;
+        for(const op of operations()){
+          if(user!==who)return;
+          try{await send(op,who);}catch{operationFailed=true;}
+        }
+        if(user===who)try{await pull(who);}catch{operationFailed=true;}
+        if(operationFailed)failed=true;
+      };
       try{if(root.navigator?.locks)await root.navigator.locks.request(PREFIX+'network:'+who,work);else await work();}
       catch{failed=true;}
       finally{running=false;if(user===who)summary();if(again){again=false;void sync();}}

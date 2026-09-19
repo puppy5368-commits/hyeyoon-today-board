@@ -65,6 +65,17 @@
 참고: [Supabase 익명 인증](https://supabase.com/docs/guides/auth/auth-anonymous),
 [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
+### 영어 영상 제약 및 미전송 기록 복구
+
+- [`supabase/2026-09-19-english-video-task-id-check.sql`](supabase/2026-09-19-english-video-task-id-check.sql)은
+  `englishVideo`를 두 `task_id` 제약에 포함하는 재현용 스키마 기록입니다. 현재 운영 Supabase에는 이미 적용되어
+  있으므로 이 저장소 작업에서는 실행하지 않습니다.
+- 제약 때문에 전송되지 못한 희윤컴의 이번 주 `englishVideo` 기록은 브라우저의 가족 동기화 대기열에 그대로 남아
+  있습니다. 보드에서 **동기화**를 누르거나 온라인 상태에서 화면을 다시 열면 같은 행을 재시도합니다. 이미 서버에
+  같은 값이 있으면 중복 전송하지 않습니다.
+- 한 대기 작업이 실패해도 나머지 작업은 같은 동기화에서 계속 전송됩니다. 실패한 작업만 대기열에 남고 다음
+  동기화 때 다시 시도합니다.
+
 추가사항:
 - `어와나 말씀 암송` 미션 추가
 - 기본 설정은 매일 표시

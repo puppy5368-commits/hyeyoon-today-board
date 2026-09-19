@@ -14,6 +14,7 @@ const user={id:USER,aud:'authenticated',role:'authenticated',email:'family@examp
 const session=(id=USER)=>({access_token:jwt(id),refresh_token:'test-only-refresh',token_type:'bearer',expires_in:3600,user:{...user,id,is_anonymous:id!==USER}});
 const tables={board_preferences:[],task_schedules:[],daily_plans:[],task_records:[]};
 const writes=[];let failWrites=false,failReads=false,conflictNext=false;
+const rejectedTaskIds=new Set();
 const pk={board_preferences:['user_id'],task_schedules:['user_id','task_id'],daily_plans:['user_id','plan_date'],task_records:['user_id','record_date','task_id']};
 async function network(route){
  const request=route.request(),url=new URL(request.url()),method=request.method();
@@ -38,6 +39,7 @@ async function network(route){
   return respond(200,tables[table].filter(matches));
  }
  writes.push({table,method,body:request.postDataJSON()});
+ if(rejectedTaskIds.has(request.postDataJSON().task_id))return respond(422,{code:'23514',message:'mock task_id check failure'});
  if(failWrites)return respond(503,{message:'test write failure'});
  const body=request.postDataJSON();
  if(method==='POST'){
@@ -100,6 +102,19 @@ if(require.main===module)(async()=>{
   await a.locator('[data-view="today"]').click();await a.locator('#editDailyPlan').click();await a.locator('[data-first-time="17:00"]').click();conflictNext=true;await a.locator('#saveDailyPlan').click();
   await waitFor(async()=>(await a.locator('#syncStatus').innerText()).includes('달라요'),'revision conflict');assert.equal(tables.daily_plans[0].first_start_time,'19:00');
   assert(Object.values(JSON.parse(await a.evaluate(k=>localStorage.getItem(k),PLANS)).days).some(p=>p.firstStartTime==='17:00'),'conflicting local plan kept');
+  // A rejected English row must remain recoverable without stopping the next row.
+  rejectedTaskIds.add('english');
+  await a.locator('[data-view="today"]').click();
+  const englishMission=a.locator('[data-task="english"]');
+  await englishMission.locator('[data-done]').click();
+  await waitFor(async()=>(await a.locator('#syncStatus').innerText()).includes('실패'),'isolated task rejection');
+  const readingMission=a.locator('[data-task="reading"]');
+  await readingMission.locator('[data-done]').click();
+  await waitFor(()=>tables.task_records.some(r=>r.task_id==='reading'&&r.done_at),'later task after rejected row');
+  assert(await a.evaluate(()=>Object.keys(localStorage).some(k=>k.includes(':family:v1:op:')&&JSON.parse(localStorage.getItem(k)).pk.task_id==='english')),'rejected row remains queued');
+  rejectedTaskIds.delete('english');
+  await a.locator('#syncButton').click();
+  await waitFor(()=>tables.task_records.some(r=>r.task_id==='english'&&r.done_at),'recovered rejected English row');
   for(const view of ['today','week','record','settings']){await a.locator(`[data-view="${view}"]`).click();assert(await a.locator('#view-'+view).isVisible());}
   assert.equal(await a.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'375px main layout');
   for(const k of SUBJECTS)assert.equal(await a.evaluate(k=>localStorage.getItem(k),k),'untouched-sentinel');
@@ -111,7 +126,7 @@ if(require.main===module)(async()=>{
   assert.equal(await broken.evaluate(k=>localStorage.getItem(k),MAIN),'not-json','invalid local source preserved');assert.equal(writes.length,writeCount);
   const {page:unconfigured}=await open({},false);assert(await unconfigured.locator('#boardApp').isVisible());assert.equal(await unconfigured.locator('#loginPanel').count(),0);
   assert.deepEqual(errors,[],'no uncaught page errors, even with invalid local data');
-  console.log('PASS: isolated Supabase simulation A-J, 375px, exact PK/revision writes, no legacy uploads, local failure/reload retry, conflict protection, anonymous shared family, original backup, subject keys unchanged.');
+  console.log('PASS: isolated Supabase simulation A-J, rejected English row isolation/retry, 375px, exact PK/revision writes, no legacy uploads, local failure/reload retry, conflict protection, anonymous shared family, original backup, subject keys unchanged.');
   console.log('Screenshot: '+path.join(os.tmpdir(),'heeyoon-cloud-main.png'));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
