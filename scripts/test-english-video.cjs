@@ -64,13 +64,13 @@ const wait = async fn => { for(let i=0;i<160;i++){if(await fn())return;await new
   assert(Object.keys(record).every(k=>['planTime','startAt','doneAt','bookType','bookTitle'].includes(k)),'no video tracking or score fields');
   for(const k of subjects)assert.equal(await page.evaluate(k=>localStorage.getItem(k),k),'preserve');
   await page.locator('[data-view="record"]').click();assert((await page.locator('#recordList').innerText()).includes('영어 영상 10분'));
-  await page.locator('[data-view="week"]').click();
+  await page.locator('[data-view="calendar"]').click();
   for(let offset=0;offset<7;offset++){
-   await page.locator(`[data-date="2026-09-${14+offset}"]`).click();
-   const text=await page.locator('#weekDetail').innerText();assert.equal(text.includes('영어 영상 10분'),[0,2,4].includes(offset));
-   if(offset===0)assert((await page.locator('#weekDetail li').filter({hasText:'영어 영상 10분'}).innerText()).includes('✓ 완료'));
+   await page.locator(`[data-calendar-date="2026-09-${14+offset}"]`).click();
+   const text=await page.locator('#calendarDetail').innerText();assert.equal(text.includes('영어 영상 10분'),[0,2,4].includes(offset));
+   if(offset===0)assert((await page.locator('#calendarDetail').innerText()).includes('☑ 🎬 영어 영상 10분'));
   }
-  await page.locator('.english-board-link a').click();await page.waitForURL('**/english/v2.html');assert(await page.getByText('희윤이의 작은 가게').count());await page.goBack();
+  await page.locator('[data-calendar-date="2026-09-19"]').click();await page.locator('.calendar-board-link[href="./english/v2.html"]').click();await page.waitForURL('**/english/v2.html');assert(await page.getByText('희윤이의 작은 가게').count());await page.goBack();
   await page.locator('[data-view="settings"]').click();
   await page.locator('[data-id="englishVideo"][data-day="1"]').click();
   await page.locator('[data-id="englishVideo"][data-day="2"]').click();await settled(page);
@@ -87,6 +87,6 @@ const wait = async fn => { for(let i=0;i<160;i++){if(await fn())return;await new
   assert.equal(await page.locator('[data-id="englishVideo"][data-day="2"]').getAttribute('class'),'day-toggle on');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.deepEqual(errors,[]);
-  console.log('PASS: all 7 weekdays, video selection, three new-tab destinations, self-reported completion, reopen/reload, legacy preservation, plan time, week, independent schedules, two-device mock Supabase sync, V2 link, 375px, no console errors.');
+  console.log('PASS: all 7 weekdays, video selection, three new-tab destinations, self-reported completion, reopen/reload, legacy preservation, plan time, calendar, independent schedules, two-device mock Supabase sync, V2 link, 375px, no console errors.');
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -115,7 +115,7 @@ if(require.main===module)(async()=>{
   rejectedTaskIds.delete('english');
   await a.locator('#syncButton').click();
   await waitFor(()=>tables.task_records.some(r=>r.task_id==='english'&&r.done_at),'recovered rejected English row');
-  for(const view of ['today','week','record','settings']){await a.locator(`[data-view="${view}"]`).click();assert(await a.locator('#view-'+view).isVisible());}
+  for(const view of ['today','calendar','record','settings']){await a.locator(`[data-view="${view}"]`).click();assert(await a.locator('#view-'+view).isVisible());}
   assert.equal(await a.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'375px main layout');
   for(const k of SUBJECTS)assert.equal(await a.evaluate(k=>localStorage.getItem(k),k),'untouched-sentinel');
   assert.equal(await a.evaluate(k=>localStorage.getItem('heeyoon-today-board:sync:v1:original:'+k),MAIN),seed[MAIN],'immutable original backup');
