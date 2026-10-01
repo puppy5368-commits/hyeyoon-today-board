@@ -34,10 +34,10 @@ const wait = async fn => { for(let i=0;i<160;i++){if(await fn())return;await new
    assert.equal(await page.locator('[data-task="english"]').count(),[1,3,5].includes(offset)?1:0);
   }
   await page.clock.setSystemTime(new Date('2026-09-14T15:00:00+09:00'));await page.reload();await settled(page);
-  await page.getByRole('button',{name:'영어 영상 10분 위로',exact:true}).click();
+  assert.equal(await page.getByRole('button',{name:'영어 영상 10분 위로',exact:true}).count(),0,'daily plan no longer exposes reorder controls');
   await page.locator('[data-first-time="16:30"]').click();await page.locator('#saveDailyPlan').click();await settled(page);
   const plan=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),PLANS);
-  assert.equal(plan.days['2026-09-14'].firstStartTime,'16:30');assert.equal(plan.days['2026-09-14'].taskOrder.at(-2),'englishVideo');
+  assert.equal(plan.days['2026-09-14'].firstStartTime,'16:30');assert.equal(plan.days['2026-09-14'].taskOrder.at(-1),'englishVideo');
   const mission=page.locator('[data-task="englishVideo"]');
   await mission.locator('[data-start]').click();
   const dialog=page.getByRole('dialog',{name:'🎬 오늘은 뭐 볼까?'});
@@ -87,6 +87,6 @@ const wait = async fn => { for(let i=0;i<160;i++){if(await fn())return;await new
   assert.equal(await page.locator('[data-id="englishVideo"][data-day="2"]').getAttribute('class'),'day-toggle on');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.deepEqual(errors,[]);
-  console.log('PASS: all 7 weekdays, video selection, three new-tab destinations, self-reported completion, reopen/reload, legacy preservation, plan order/time, week, independent schedules, two-device mock Supabase sync, V2 link, 375px, no console errors.');
+  console.log('PASS: all 7 weekdays, video selection, three new-tab destinations, self-reported completion, reopen/reload, legacy preservation, plan time, week, independent schedules, two-device mock Supabase sync, V2 link, 375px, no console errors.');
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
