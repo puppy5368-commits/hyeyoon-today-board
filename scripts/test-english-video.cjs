@@ -64,11 +64,11 @@ const wait = async fn => { for(let i=0;i<160;i++){if(await fn())return;await new
   assert(Object.keys(record).every(k=>['planTime','startAt','doneAt','bookType','bookTitle'].includes(k)),'no video tracking or score fields');
   for(const k of subjects)assert.equal(await page.evaluate(k=>localStorage.getItem(k),k),'preserve');
   await page.locator('[data-view="record"]').click();assert((await page.locator('#recordList').innerText()).includes('영어 영상 10분'));
-  await page.locator('[data-view="calendar"]').click();
+  await page.locator('[data-view="today"]').click();
   for(let offset=0;offset<7;offset++){
-   await page.locator(`[data-calendar-date="2026-09-${14+offset}"]`).click();
-   const text=await page.locator('#calendarDetail').innerText();assert.equal(text.includes('영어 영상 10분'),[0,2,4].includes(offset));
-   if(offset===0)assert((await page.locator('#calendarDetail').innerText()).includes('☑ 🎬 영어 영상 10분'));
+   const cell=page.locator(`[data-calendar-date="2026-09-${14+offset}"]`);await cell.click();
+   if(offset===0){assert.equal(await page.locator('[data-task="englishVideo"]').count(),1);assert(await page.locator('[data-task="englishVideo"]').evaluate(e=>e.classList.contains('done')));}
+   else assert.equal((await page.locator('#selectedDateMissions').innerText()).includes('영어 영상 10분'),[0,2,4].includes(offset));
   }
   await page.locator('[data-calendar-date="2026-09-19"]').click();await page.locator('.calendar-board-link[href="./english/v2.html"]').click();await page.waitForURL('**/english/v2.html');assert(await page.getByText('희윤이의 작은 가게').count());await page.goBack();
   await page.locator('[data-view="settings"]').click();

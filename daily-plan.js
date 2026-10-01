@@ -30,7 +30,7 @@ window.initDailyPlans = function ({key, ids, firstStart, refresh}) {
     try { saved = load().days[date]; }
     catch { box.innerHTML = '<section class="daily-plan">계획 기록을 불러오지 못했어요. 저장 공간을 확인한 뒤 다시 열어주세요.</section>'; return; }
     if (saved && validTime(saved.firstStartTime) && !draft) {
-      box.innerHTML = `<section class="daily-plan"><h3>🌷 희윤이의 오늘 계획</h3><p>첫 시작 <b>${saved.firstStartTime}</b> · 마감 <b>${validTime(saved.deadline)?saved.deadline:rules.deadline}</b></p><p class="plan-promise" id="planGuidance"></p><button class="btn" id="editDailyPlan">계획 다시 보기/수정</button></section>`;
+      box.innerHTML = `<section class="daily-plan daily-plan-summary"><div class="plan-summary-head"><div><h3>💗 오늘 계획</h3><p>첫 시작 <b>${saved.firstStartTime}</b> · 저녁 8시까지 완료</p></div><button class="btn" id="editDailyPlan">계획 수정</button></div><p class="plan-guidance" id="planGuidance"></p></section>`;
       document.getElementById('planGuidance').textContent = guidance(saved,date);
       document.getElementById('editDailyPlan').onclick = () => { draft = {date, firstStartTime:saved.firstStartTime}; render(); };
       return;
