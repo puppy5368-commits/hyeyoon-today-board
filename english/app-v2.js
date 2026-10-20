@@ -4,7 +4,7 @@
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let state;try{state=M.load(localStorage);}catch(error){$('study').textContent=error.message;return;}
   let week=M.firstIncomplete(state),section='A',index=0,active=false,touched=false,ttsNotice='',report=null;
-  const session=()=>((state.weeks[String(week)]||={sessions:{}}).sessions[section]||={items:{},completedAt:null});
+  const session=()=>((state.weeks[String(week)]||={sessions:{}}).sessions[section]||={items:{},completedAt:null,contentVersion:M.contentVersion(week)});
   const item=()=>session().items[index]||(section==='C'?{spoken:false,helpUsed:false,feeling:null,choice:null}:{choice:null,firstCorrect:null,attempts:[],hintUsed:false,relistenCount:0,resolved:false});
   const cloud=EnglishCloud.create({storage:localStorage,getState:()=>state,onStatus:message=>{$('sync-status').textContent=message;},onChange:()=>{if(!active&&!touched)week=M.firstIncomplete(state);render();}});
   const save=record=>{if(record)session().items[index]=record;state.currentWeek=week;cloud.commit('week:'+week+':'+section,session());};
