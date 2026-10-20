@@ -46,6 +46,11 @@
         cloud=await remote();const local=M.rows(getState());
         for(const [key,row]of Object.entries(cloud)){
           if(queue[key]||conflicts[key])continue;
+          if(M.isStale(key,row.value)){
+            base[key]={value:M.clone(row.value),revision:row.revision};
+            legacy=legacy.filter(k=>k!==key);
+            continue;
+          }
           const value=local[key],previous=base[key];
           if(value&&!equal(value,row.value)&&(!previous||!equal(value,previous.value))){conflicts[key]='기존 기록 충돌 보류';continue;}
           M.put(getState(),key,row.value);base[key]={value:M.clone(row.value),revision:row.revision};
