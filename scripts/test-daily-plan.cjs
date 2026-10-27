@@ -45,8 +45,8 @@ const {network,session}=require('./test-cloud.cjs');
  await page.locator('[data-start]').first().click();await page.locator('[data-done]').first().click();
  assert((await page.locator('#planGuidance').innerText()).includes('시작했어요'));
  await page.locator('[data-view="settings"]').click();await page.locator('.plan-record summary').click();assert((await page.locator('#planRecords').innerText()).includes('+12분'));assert(!(await page.locator('#planRecords').innerText()).includes('계획한 순서'));
- assert.equal(await page.locator('#settingsTasks .setting-task').count(),9);
- await page.locator('[data-view="today"]').click();assert.equal(await page.locator('.calendar-day').count(),42);assert.equal(await page.locator('#calendarDetail').count(),0);assert((await page.locator('#selectedMissionSummary').innerText()).includes('9월 11일 금요일 · 완료 1/'));
+ assert.equal(await page.locator('#settingsTasks .setting-task').count(),10);
+ await page.locator('[data-view="today"]').click();assert.equal(await page.locator('.calendar-day').count(),0);await page.locator('[data-view="week"]').click();assert.equal(await page.locator('#weekGrid [data-date]').count(),7);assert.equal(await page.locator('#view-week a[href="./literacy/"]').count(),1);await page.locator('[data-view="today"]').click();
  assert.equal(await page.locator('#view-today a[href="https://heeyoon-history.vercel.app/"]').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),375);
  await page.clock.setSystemTime(new Date('2026-09-12T15:00:00+09:00'));await page.reload();await page.locator('#boardApp').waitFor({state:'visible'});assert(await page.locator('#saveDailyPlan').isVisible());assert.equal(await page.locator('.plan-order').count(),0);
@@ -60,6 +60,6 @@ const {network,session}=require('./test-cloud.cjs');
  await page.evaluate(()=>{const d=JSON.parse(localStorage.getItem('heeyoon-today-board:v1'));d.settings.taskDays=Object.fromEntries(['gumonKorean','gumonHanja','qt','awana','reading','history','english','englishVideo','literacy'].map(id=>[id,[]]));localStorage.setItem('heeyoon-today-board:v1',JSON.stringify(d));});
  await page.reload();await page.locator('#boardApp').waitFor({state:'visible'});assert.equal(await page.locator('#dailyPlan').innerText(),'');
  assert.deepEqual(errors,[]);
- await context.close();await browser.close();console.log('PASS: isolated browser storage; quick/custom time, save/reload/edit, guidance, +12 min actual start, two dates, legacy preservation, completion, settings, monthly calendar, links, 375px/1280px no overflow.');
+ await context.close();await browser.close();console.log('PASS: isolated browser storage; quick/custom time, save/reload/edit, guidance, +12 min actual start, two dates, legacy preservation, completion, settings, weekly view, links, 375px/1280px no overflow.');
 })().catch(e=>{console.error(e);process.exit(1)});
 
