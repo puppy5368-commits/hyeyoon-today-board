@@ -13,4 +13,4 @@ http.createServer((req, res) => {
     res.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript; charset=utf-8' : file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store'); res.end(data);
   });
-}).listen(4173, '127.0.0.1', () => console.log('http://localhost:4173'));
+}).listen(Number(process.env.PORT)||4173, '127.0.0.1', () => console.log('http://localhost:'+(Number(process.env.PORT)||4173)));

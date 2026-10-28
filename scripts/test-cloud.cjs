@@ -12,10 +12,10 @@ const stamp=()=>new Date().toISOString();
 const jwt=(id=USER)=>[Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),Buffer.from(JSON.stringify({sub:id,role:'authenticated',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url'),'test-signature'].join('.');
 const user={id:USER,aud:'authenticated',role:'authenticated',email:'family@example.invalid',app_metadata:{provider:'email'},user_metadata:{},created_at:stamp()};
 const session=(id=USER)=>({access_token:jwt(id),refresh_token:'test-only-refresh',token_type:'bearer',expires_in:3600,user:{...user,id,is_anonymous:id!==USER}});
-const tables={board_preferences:[],task_schedules:[],daily_plans:[],task_records:[]};
+const tables={board_preferences:[],task_schedules:[],daily_plans:[],task_records:[],math_assignments:[]};
 const writes=[];let failWrites=false,failReads=false,conflictNext=false;
 const rejectedTaskIds=new Set();
-const pk={board_preferences:['user_id'],task_schedules:['user_id','task_id'],daily_plans:['user_id','plan_date'],task_records:['user_id','record_date','task_id']};
+const pk={board_preferences:['user_id'],task_schedules:['user_id','task_id'],daily_plans:['user_id','plan_date'],task_records:['user_id','record_date','task_id'],math_assignments:['user_id','assignment_id']};
 async function network(route){
  const request=route.request(),url=new URL(request.url()),method=request.method();
  const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'GET,POST,PATCH,DELETE,OPTIONS','Content-Type':'application/json'};
@@ -68,7 +68,7 @@ if(require.main===module)(async()=>{
   return {ctx,page};
  }
  async function login(page){await page.locator('#boardApp').waitFor({state:'visible'});await waitFor(async()=>(await page.locator('#syncStatus').innerText()).includes('동기화됨')||(await page.locator('#syncStatus').innerText()).includes('달라요')||(await page.locator('#syncStatus').innerText()).includes('실패'),'initial sync');}
- const legacy={version:1,settings:{bookGoal:2,taskDays:{qt:[0,1,2,3,4,5,6],reading:[0,1,2,3,4,5,6]}},days:{'2026-08-01':{tasks:{reading:{bookTitle:'그램 원본',startAt:'2026-08-01T07:00:00Z',doneAt:'2026-08-01T07:20:00Z',bookType:'text'}}}}};
+ const legacy={version:1,settings:{bookGoal:2,taskDays:{qt:[0,1,2,3,4,5,6],reading:[0,1,2,3,4,5,6],english:[0,1,2,3,4,5,6]}},days:{'2026-08-01':{tasks:{reading:{bookTitle:'그램 원본',startAt:'2026-08-01T07:00:00Z',doneAt:'2026-08-01T07:20:00Z',bookType:'text'}}}}};
  const planLegacy={version:1,days:{'2026-08-01':{firstStartTime:'16:30',taskOrder:['reading'],deadline:'20:00',updatedAt:'2026-08-01T06:00:00Z'}}};
  const seed={[MAIN]:JSON.stringify(legacy),[PLANS]:JSON.stringify(planLegacy),...Object.fromEntries(SUBJECTS.map(k=>[k,'untouched-sentinel']))};
  try{

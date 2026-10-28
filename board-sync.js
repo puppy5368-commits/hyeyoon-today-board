@@ -5,6 +5,7 @@
   const PREFIX = 'heeyoon-today-board:sync:v1:';
   const TASKS = ['gumonKorean','gumonHanja','qt','awana','reading','history','english','englishVideo','didimdolMath','literacy'];
   const fields = {planTime:'plan_time',startAt:'start_at',doneAt:'done_at',bookType:'book_type',bookTitle:'book_title'};
+  const mathFields = {date:'assigned_date',startAt:'start_at',doneAt:'done_at'};
   const clone = x => JSON.parse(JSON.stringify(x));
   const equal = (a,b) => {
     if(a==null&&b==null)return true;
@@ -23,6 +24,10 @@
     const out={}; if(!data)return out;
     const put=(table,id,pk,values)=>{out[table+'/'+id]={table,pk,values};};
     if(key===MAIN){
+      for(const [id,item] of Object.entries(data.mathAssignments||{})){
+        const values={};for(const [local,remote] of Object.entries(mathFields))if(own(item,local))values[remote]=item[local];
+        if(Object.keys(values).length)put('math_assignments',id,{assignment_id:id},values);
+      }
       if(own(data.settings,'bookGoal'))put('board_preferences','one',{}, {book_goal:data.settings.bookGoal});
       for(const [id,days] of Object.entries(data.settings.taskDays||{}))if(TASKS.includes(id))put('task_schedules',id,{task_id:id},{days});
       for(const [date,day] of Object.entries(data.days))for(const [id,item] of Object.entries(day.tasks||{})){
@@ -36,6 +41,10 @@
     return out;
   }
   function apply(data,row,patch) {
+    if(row.table==='math_assignments'){
+      data.mathAssignments||={};const item=data.mathAssignments[row.pk.assignment_id]||={};
+      for(const [local,remote] of Object.entries(mathFields))if(own(patch,remote))item[local]=patch[remote];return;
+    }
     if(row.table==='board_preferences'){data.settings.bookGoal=patch.book_goal;return;}
     if(row.table==='task_schedules'){data.settings.taskDays||={};data.settings.taskDays[row.pk.task_id]=clone(patch.days);return;}
     const date=row.pk.record_date||row.pk.plan_date;
@@ -49,6 +58,7 @@
   }
   function remoteRow(table,r){
     let id,pk,values;
+    if(table==='math_assignments'){id=r.assignment_id;pk={assignment_id:r.assignment_id};values=Object.fromEntries(Object.values(mathFields).map(k=>[k,r[k]]));}
     if(table==='board_preferences'){id='one';pk={};values={book_goal:r.book_goal};}
     if(table==='task_schedules'){id=r.task_id;pk={task_id:r.task_id};values={days:r.days};}
     if(table==='daily_plans'){id=r.plan_date;pk={plan_date:r.plan_date};values={first_start_time:r.first_start_time,task_order:r.task_order,deadline:r.deadline,source_updated_at:r.source_updated_at};}
@@ -115,11 +125,11 @@
       // Do not advance pull baseline here: the user's earlier legacy fields may differ.
     }
     async function pull(who){
-      for(const table of ['board_preferences','task_schedules','daily_plans','task_records']){
+      for(const table of ['board_preferences','task_schedules','daily_plans','task_records','math_assignments']){
         let offset=0;
         while(user===who){
           let request=client.from(table).select('*').eq('user_id',who);
-          const order=table==='task_records'?['record_date','task_id']:table==='daily_plans'?['plan_date']:table==='task_schedules'?['task_id']:['user_id'];
+          const order=table==='math_assignments'?['assignment_id']:table==='task_records'?['record_date','task_id']:table==='daily_plans'?['plan_date']:table==='task_schedules'?['task_id']:['user_id'];
           for(const col of order)request=request.order(col);
           const result=await request.range(offset,offset+499);if(result.error)throw result.error;if(user!==who)return;
           for(const raw of result.data){
@@ -129,6 +139,9 @@
             const pending=operations().filter(o=>o.id===row.id),protectedFields=new Set(pending.flatMap(o=>Object.keys(o.patch)));
             for(const [f,v] of Object.entries(row.values)){
               if(protectedFields.has(f))continue;
+              // A remote null is an intentional "undated" value, overriding
+              // the book's initial assignment even on a brand-new device.
+              if(table==='math_assignments'&&!own(current,f)){patch[f]=v;continue;}
               if(equal(current[f],v))continue;
               if(!own(current,f) || (base && equal(current[f],base.values[f])))patch[f]=v;
               else conflict=true;
