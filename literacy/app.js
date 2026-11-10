@@ -2,10 +2,10 @@
 'use strict';
 const KEY='heeyoon-literacy-board:v2', lessons=window.LITERACY_V2;
 const fresh=()=>({version:2,sessions:{}});
-let warning='', state=load(), current=next().id, active=false, question=0;
+let warning='', state=load(), current=next().id, active=false, question=0, cloud=null;
 const labels={green:'🟢 혼자 해결했어요',yellow:'🟡 다시 읽고 해결했어요',blue:'🔵 도움을 받고 이해했어요'};
 function load(){try{const raw=localStorage.getItem(KEY);if(!raw)return fresh();const s=JSON.parse(raw);if(s.version!==2||!s.sessions||typeof s.sessions!=='object'||Array.isArray(s.sessions))throw Error();return s;}catch{warning='저장된 V2 기록을 읽지 못했어요. 기존 기록 보호를 위해 이번 화면의 저장을 중단했어요. 브라우저 저장 설정을 확인해 주세요.';return fresh();}}
-function save(){if(warning)return;try{localStorage.setItem(KEY,JSON.stringify(state));}catch{warning='기록을 저장하지 못했어요. 저장 공간 또는 브라우저 설정을 확인해 주세요. 현재 화면을 닫으면 새 기록이 사라질 수 있어요.';document.getElementById('storageNotice').textContent=warning;}}
+function save(){if(warning)return;try{localStorage.setItem(KEY,JSON.stringify(state));cloud?.commit();}catch{warning='기록을 저장하지 못했어요. 저장 공간 또는 브라우저 설정을 확인해 주세요. 현재 화면을 닫으면 새 기록이 사라질 수 있어요.';document.getElementById('storageNotice').textContent=warning;}}
 function record(l){return state.sessions[l.id]||{week:l.week,session:l.session,questions:{}};}
 function ensure(l){return state.sessions[l.id]||=record(l);}
 function next(){return lessons.find(l=>!record(l).completedAt)||lessons[23];}
@@ -72,6 +72,15 @@ function renderParent(){
  const stats=(list)=>{const c=list.filter(s=>s.attempts?.length);return c.length?`${c.filter(s=>s.attempts[0].correct).length}/${c.length} (${Math.round(c.filter(s=>s.attempts[0].correct).length/c.length*100)}%)`:'아직 기록 없음';};
  document.getElementById('parentStats').innerHTML=`<div class="parent-grid"><p>이번 학습 주차: ${n.week}주 (달력 주차가 아닌 학습 순서 기준)<br>${lessons.filter(l=>l.week===n.week).map(l=>`${l.session}: ${record(l).completedAt?'완료':'미완료'} · ${l.title}`).join('<br>')}</p><p>${Object.entries(labels).map(([k,v])=>`${v}: ${resolved.filter(s=>s.result===k).length}문제`).join('<br>')}</p><p>첫 제출 정답률: ${all.length?`${correct.length}/${all.length} (${Math.round(correct.length/all.length*100)}%)`:'아직 기록 없음'}<br>다시 읽고 맞힌 문제: ${resolved.filter(s=>s.result==='yellow').length}<br>힌트 사용 문제: ${all.filter(s=>s.hintUsed).length}<br>“확실해요”라고 했지만 첫 제출이 틀린 문제: ${over.length}<br>해결했지만 핵심 근거 일부를 표시하지 않은 문제: ${resolved.filter(s=>!s.evidenceCorrect).length}</p><p>재진단 참고 · 첫 제출 기준<br>1주: ${stats(lessons.filter(l=>l.week===1).flatMap(l=>Object.values(record(l).questions)))}<br>12주: ${stats(lessons.filter(l=>l.week===12).flatMap(l=>Object.values(record(l).questions)))}<br><small>서로 다른 글과 난도이므로 표준화된 능력 점수나 직접적인 성장률은 아닙니다.</small></p><details><summary>회차별 상세 기록</summary>${lessons.map(l=>`<p><b>${l.week}주 ${l.session} · ${l.title}</b> · ${record(l).completedAt?new Date(record(l).completedAt).toLocaleDateString('ko-KR'):'미완료'}<br>${Object.entries(record(l).questions).filter(([,s])=>s.attempts.length).map(([i,s])=>`${+i+1}번: 첫 선택 ${s.first+1} → 최종 ${s.final===null?'생각 중':s.final+1} · ${s.firstConfidence==='sure'?'확실':'헷갈림'} · ${s.result?labels[s.result]:'진행 중'} · 근거 ${s.evidence.join(', ')||'다시 선택 중'} · 시도 ${s.attempts.length}회 · 힌트 ${s.hintUsed?'사용':'없음'}`).join('<br>')}</p>`).join('')}</details></div>`;
 }
-document.getElementById('reset').onclick=()=>{if(warning)return;if(confirm('V2 학습 기록만 초기화할까요? 기존 V1 및 오늘 할 일 기록은 유지됩니다.')){state=fresh();current=lessons[0].id;active=false;question=0;save();render();}};
+document.getElementById('reset').onclick=()=>{if(warning)return;alert('문해력 기록은 이제 가족 기기와 동기화되어 전체 초기화는 이 화면에서 하지 않아요. 기록을 지워야 할 때는 부모용으로 안전하게 처리할게요.');};
+cloud=window.LiteracyCloud?.create({
+ getState:()=>state,
+ onStatus:message=>{const el=document.getElementById('syncStatus');if(el)el.textContent=message;},
+ onMerged:(id,value,batch)=>{
+  if(id&&value){state.sessions[id]=value;try{localStorage.setItem(KEY,JSON.stringify(state));}catch{}}
+  if(batch){if(!active)current=next().id;render();}
+ }
+});
 render();
+if(cloud)window.LiteracyCloud.connect(cloud);
 })();
