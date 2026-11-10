@@ -16,11 +16,14 @@
 <div class="app">
   <header class="top"><div class="brand"><div class="penguin">🐧</div><div><b>희윤이 학습도우미</b><small>문해력 · 정확하게 읽는 연습</small></div></div><a class="home" href="../">← 오늘 할 일</a></header>
   <section class="hero"><span class="eyebrow">12-WEEK READING MISSION</span><h1>📖 희윤이 문해력 탐험</h1><p>빨리 답하는 것보다 <strong>글에서 근거를 찾고 정확하게 읽는 힘</strong>을 길러요.<br>일주일에 두 번 · A 기술 배우기 / B 실전 적용 · 회당 10~15분</p><div class="progress"><div class="bar"><span id="bar"></span></div><b id="progressText"></b></div></section>
-  <p id="currentLabel"></p><p id="storageNotice" role="alert"></p><details class="card" id="parent"><summary>부모용 학습 기록</summary><div id="parentStats"></div></details><div class="weeks" id="weeks"></div>
+  <p id="currentLabel"></p><p id="storageNotice" role="alert"></p><p id="syncStatus" role="status" style="color:var(--muted);font-size:12px">이 기기에 저장됨 · 연결 대기</p><details class="card" id="parent"><summary>부모용 학습 기록</summary><div id="parentStats"></div></details><div class="weeks" id="weeks"></div>
   <main class="study" id="study"></main>
   <footer class="footer">희윤이 문해력보드 V2.0 · 답보다 근거를 먼저 찾아요 ♡<br>기존 V1 기록은 그대로 보관됩니다.<br><button class="reset" id="reset">V2 학습 기록 초기화</button></footer>
 </div>
+<script src="../vendor/supabase.js"></script>
+<script src="../supabase-config.js"></script>
 <script src="./data-v2.js"></script>
+<script src="./literacy-cloud.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>
